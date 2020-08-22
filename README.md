@@ -1,24 +1,10 @@
 # logicide
 
-## Project setup
+WIP: Upgrade of logic simulation to use golden-layout, monaco editor and d3-hwschematic
+
+## Setup
+
 ```
 npm install
-```
-
-### Compiles and hot-reloads for development
-```
 npm run serve
 ```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
