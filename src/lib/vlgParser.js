@@ -36,9 +36,9 @@ var definedModules = [];
 var savePosition = 0;
 var lint = [];
 
-const lintError = (lintError, severity) => (error) => {
+const lintError = (lintError, severity) => (error, index) => {
   lint.push({
-    index: error.index,
+    index: index,
     error: lintError,
     severity: severity ? severity : "error",
   });
@@ -51,7 +51,9 @@ const lintWhere = (state, where) => {
   return state.index - where;
 };
 
-const lintWarningParser = (error, level, where) => tapParser((state) => lintError(error, level)("", lintWhere(state, where)));
+const lintWarningParser = (error, level, where) => {
+  return tapParser((state) => lintError(error, level)("", lintWhere(state, where)));
+};
 
 const tapPosition = tapParser((state) => (savePosition = state.index)).map(() => savePosition);
 

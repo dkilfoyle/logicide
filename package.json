@@ -11,6 +11,7 @@
     "@fortawesome/fontawesome-free": "^5.14.0",
     "arcsecond": "^3.1.1",
     "bulma": "^0.9.0",
+    "chalk": "^4.1.0",
     "core-js": "^3.6.5",
     "golden-layout": "^1.5.9",
     "line-column": "^1.0.2",

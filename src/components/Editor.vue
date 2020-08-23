@@ -219,7 +219,7 @@ export default {
           range: new monaco.Range(errorStart.line, errorStart.col, errorEnd.line, errorEnd.col),
           options: {
             inlineClassName: "lintErrorUnderline",
-            glyphMarginClassName: "fas fa-exclamation-triangle fa-sm",
+            glyphMarginClassName: e.severity == "error" ? "fas fa-exclamation-triangle marginError" : "fas fa-exclamation-circle marginWarning",
             glyphMarginHoverMessage: { value: e.error },
           },
         };
@@ -236,36 +236,21 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style>
-.myGlyphMarginClass {
-  background: red;
+.marginError {
+  color: indianred;
+  margin-left: 5px;
+  width: 14px !important;
 }
 
-.fa-exclamation-triangle {
-  color: indianred;
+.marginWarning {
+  color: orange;
+  margin-left: 5px;
+  width: 14px !important;
 }
 
 .lintErrorUnderline {
   color: indianred !important;
   /* cursor: pointer; */
   text-decoration: darksalmon underline wavy;
-}
-
-.myContentClass {
-  background: lightblue;
-}
-
-.warningIcon {
-  /* display: block;
-  /* background-image: url("../assets/icons/warningIcon.png"); */
-  /* background-size: contain; */
-  /* background-repeat: no-repeat; */
-  background: red;
-}
-
-.errorIcon {
-  display: block;
-  /* background-image: url("../assets/icons/errorIcon.png"); */
-  background-size: contain;
-  background-repeat: no-repeat;
 }
 </style>

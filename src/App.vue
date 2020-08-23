@@ -1,14 +1,20 @@
 <template>
   <div id="app">
-    <golden-layout class="hscreen" :header-height="46">
+    <golden-layout class="hscreen" :header-height="46" :showPopoutIcon="false">
       <gl-row>
-        <gl-col :width="65">
-          <gl-stack :height="80">
+        <gl-col :width="10">
+          <gl-component :closable="false" title="Menu">
+            <button class="button" @click="compile">Compile</button>
+          </gl-component>
+        </gl-col>
+
+        <gl-col :width="55">
+          <gl-stack :height="80" v-model="codeTab">
             <gl-component @resize="onResizeEditorWindow('editor1')" title="Editor">
-              <editor ref="editor1" v-model="code"></editor>
+              <editor ref="editor1" tabId="Scratch" v-model="sourceFiles.Scratch"></editor>
             </gl-component>
           </gl-stack>
-          <gl-component id="consoleComponent" title="Console" @resize="onResizeTerminalWindow" @open="onOpenTerminalWindow">
+          <gl-component id="consoleComponent" title="Console" @resize="onResizeTerminalWindow" @open="onOpenTerminalWindow" :closable="false">
             <TerminalView
               ref="terminal"
               auto-size
@@ -23,14 +29,14 @@
           </gl-component>
         </gl-col>
         <gl-col>
-          <gl-stack>
-            <gl-component title="component2">
-              <div class="level"><button class="button" @click="printTerminal">Log to terminal</button></div>
-            </gl-component>
-            <gl-component title="component3">
-              <h1>Component 3</h1>
-            </gl-component>
-          </gl-stack>
+          <gl-component title="Gates">
+            <div class="level">
+              <button class="button" @click="printTerminal">Log to terminal</button>
+            </div>
+          </gl-component>
+          <gl-component title="Schematic">
+            <h1>Component 3</h1>
+          </gl-component>
         </gl-col>
       </gl-row>
     </golden-layout>
@@ -42,7 +48,19 @@ import TerminalView from "./components/TerminalView";
 import Editor from "./components/Editor";
 import "bulma/css/bulma.css";
 
-import SourceFiles from "./files";
+const Chalk = require("chalk");
+let options = { enabled: true, level: 2 };
+const chalk = new Chalk.Instance(options);
+const shortJoin = (strs) => {
+  const x = strs.join(", ");
+  if (x.length < 21) return x;
+  else return x.slice(0, 40) + "...";
+};
+
+import vlgParser from "./lib/vlgParser.js";
+import vlgCompiler from "./lib/vlgCompiler.js";
+
+import UtilsMixin from "./mixins/utils";
 
 export default {
   name: "App",
@@ -50,6 +68,7 @@ export default {
     TerminalView,
     Editor,
   },
+  mixins: [UtilsMixin],
   data() {
     return {
       glOptions: {
@@ -58,12 +77,19 @@ export default {
         },
         content: [],
       },
-      code: SourceFiles.Scratch,
+      codeTab: "Scratch",
+      sourceFiles: require("./files").default,
     };
+  },
+  computed: {
+    code() {
+      return this.sourceFiles[this.codeTab];
+    },
   },
   methods: {
     printTerminal() {
-      this.$refs.terminal.setContent("hello");
+      console.log(this.sourceFiles);
+      console.log(this.code);
     },
     onResizeEditorWindow(editorName) {
       this.$refs[editorName].onResize();
@@ -73,6 +99,50 @@ export default {
     },
     onOpenTerminalWindow() {
       this.$refs.terminal.open();
+    },
+    termWriteln(str) {
+      this.$refs.terminal.setContent(str);
+    },
+    compile() {
+      const newCompiled = {};
+      newCompiled.sourceFile = this.codeTab;
+      this.termWriteln(chalk.bold.green("• Compiling: ") + chalk.yellow(this.codeTab));
+
+      const parse = vlgParser(this.code).parseState;
+      console.log("Parse: ", this.stripReactive(parse));
+      if (parse.isError) {
+        newCompiled.state = "error";
+        this.termWriteln(chalk.red("└── Parser error: ") + parse.error);
+        return;
+      }
+
+      newCompiled.state = "success";
+      newCompiled.parseTree = parse.result;
+      this.termWriteln(
+        chalk.green(`├── Parsed ${newCompiled.parseTree.length} modules: ${chalk.white(newCompiled.parseTree.map((x) => x.id).join(", "))}`)
+      );
+
+      // const walk = vlgWalker(newCompiled.parseTree);
+      const walk = vlgCompiler(newCompiled.parseTree);
+      console.log("Compiled: ", this.stripReactive(walk));
+
+      newCompiled.instances = [...walk.instances];
+      newCompiled.gates = [...walk.gates];
+
+      this.termWriteln(
+        chalk.green(
+          `├── Generated ${newCompiled.instances.length} instances: ${chalk.white(shortJoin(newCompiled.instances.map((x) => x.id)))}`
+        )
+      );
+      this.termWriteln(
+        chalk.green(`└── Generated ${newCompiled.gates.length} gates: ${chalk.white(shortJoin(newCompiled.gates.map((x) => x.id)))}`)
+      );
+
+      this.termWriteln(chalk.green.inverse(" DONE ") + "  Compiled successfully");
+
+      newCompiled.timestamp = Date.now();
+      newCompiled.simulation = { ready: false };
+      this.compiled = newCompiled; // do it this way so that Vue does not propogate reactive changes until this.compiled is fully updated
     },
   },
 };
