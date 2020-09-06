@@ -13,8 +13,10 @@
 
 <script>
 import MonacoEditor from "vue-monaco";
-var lineColumn = require("line-column");
-import vlgParser from "../lib/vlgParser.js";
+// var lineColumn = require("line-column");
+// import vlgParser from "../lib/vlgParser.js"; // parsec parser
+import parse from "../lib/vlgAntlrParser.js"; // parsec parser
+import walk from "../lib/vlgAntlrListener.js"; // parsec parser
 
 String.prototype.regexIndexOf = function(regex, startpos) {
   var indexOf = this.substring(startpos || 0).search(regex);
@@ -201,34 +203,26 @@ export default {
     lint(text) {
       console.log("lint");
       if (text.length == 0) return [];
-      const monaco = this.monaco;
-      console.log("editor: ", this.editor);
-      console.log("monaco: ", this.monaco);
-      var finder = lineColumn(text, { origin: 1 });
-
-      const parse = vlgParser(text);
-      console.log("parse: ", parse);
-
-      // this.$emit("parsed", errors);
-      let newDecorations = parse.lint.map((e) => {
-        var errorStart = finder.fromIndex(e.index);
-        var errorEnd = finder.fromIndex(Math.max(text.regexIndexOf(/[\s()[\]{},=]/, e.index), e.index));
-        // eslint-disable-next-line no-debugger
-        // debugger;
-        return {
-          range: new monaco.Range(errorStart.line, errorStart.col, errorEnd.line, errorEnd.col),
+      const parseResult = parse(text);
+      let newDecorations = parseResult.errors.map((e) => ({
+        range: new this.monaco.Range(e.startLine, e.startColumn, e.endLine, e.endColumn),
           options: {
             inlineClassName: "lintErrorUnderline",
             glyphMarginClassName: e.severity == "error" ? "fas fa-exclamation-triangle marginError" : "fas fa-exclamation-circle marginWarning",
-            glyphMarginHoverMessage: { value: e.error },
-          },
-        };
-      });
+            glyphMarginHoverMessage: { value: e.msg }
+          }
+      }));
+
+      if (parseResult.errors.length == 0) {
+        const walkResult = walk(parseResult.ast);
+        console.log(walkResult);
+
+  // TODO: convert walkResult.errors to add to newdecorations
+
+      }
 
       console.log("newDecorations: ", newDecorations);
-
       this.lintDecorations = this.editor.deltaDecorations(this.lintDecorations, newDecorations);
-      console.log(this.lintDecorations);
     },
   },
 };

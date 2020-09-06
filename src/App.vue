@@ -1,10 +1,11 @@
 <template>
   <div id="app">
-    <golden-layout class="hscreen" :header-height="46" :showPopoutIcon="false">
+    <golden-layout class="hscreen" :header-height="36" :showPopoutIcon="false">
       <gl-row>
         <gl-col :width="10">
           <gl-component :closable="false" title="Menu">
             <button class="button" @click="compile">Compile</button>
+            <button class="button" @click="printTerminal">Log to terminal</button>
           </gl-component>
         </gl-col>
 
@@ -29,10 +30,8 @@
           </gl-component>
         </gl-col>
         <gl-col>
-          <gl-component title="Gates">
-            <div class="level">
-              <button class="button" @click="printTerminal">Log to terminal</button>
-            </div>
+          <gl-component title="Gates" class="section myBulma">
+            <gates :file="compiled.sourceFile" :gates="compiled.gates" :instances="compiled.instances"></gates>
           </gl-component>
           <gl-component title="Schematic">
             <h1>Component 3</h1>
@@ -44,9 +43,11 @@
 </template>
 
 <script>
+import "bulma/css/bulma.css";
+
 import TerminalView from "./components/TerminalView";
 import Editor from "./components/Editor";
-import "bulma/css/bulma.css";
+import Gates from "./components/Gates";
 
 const Chalk = require("chalk");
 let options = { enabled: true, level: 2 };
@@ -67,6 +68,7 @@ export default {
   components: {
     TerminalView,
     Editor,
+    Gates,
   },
   mixins: [UtilsMixin],
   data() {
@@ -79,6 +81,15 @@ export default {
       },
       codeTab: "Scratch",
       sourceFiles: require("./files").default,
+      compiled: {
+        timestamp: null,
+        state: "uncompiled",
+        sourceFile: "",
+        parseTree: { lint: [] },
+        gates: [],
+        instances: [],
+        simulation: { ready: false, gates: {}, time: [], maxTime: 0 },
+      },
     };
   },
   computed: {
@@ -153,6 +164,11 @@ export default {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 5px;
+}
+
+.myBulma {
+  padding: 1rem;
 }
 
 .editor {
@@ -162,8 +178,8 @@ export default {
 }
 
 .hscreen {
-  width: 100vw;
-  height: 100vh;
+  width: calc(100vw - 10px);
+  height: calc(100vh - 10px);
   overflow: none;
 }
 
@@ -172,16 +188,16 @@ export default {
 }
 
 .lm_tab {
-  height: 40px !important;
-  line-height: 40px;
+  height: 30px !important;
+  line-height: 30px;
 }
 
 .lm_close_tab {
-  height: 35px !important;
+  height: 25px !important;
 }
 
 .lm_controls {
-  top: 13px;
+  top: 8px;
 }
 
 ::-webkit-scrollbar {

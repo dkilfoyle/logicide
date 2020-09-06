@@ -1,0 +1,9 @@
+module Foo (input x,y,
+            output A);
+  wire b;
+  and(A,x,y);
+endmodule
+
+module Main;
+  wire c;
+endmodule

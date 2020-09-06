@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.14.0",
+    "antlr4": "^4.8.0",
     "arcsecond": "^3.1.1",
     "bulma": "^0.9.0",
     "chalk": "^4.1.0",
