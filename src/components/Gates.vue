@@ -1,7 +1,9 @@
 <template>
   <div class="columns">
     <div class="column is-narrow">
-      <div class="text-subtitle2">{{ file }}</div>
+      <b-menu-list :label="file">
+        <tree-menu :label="instanceTree.label" :nodes="instanceTree.nodes" @selected="selectInstance"></tree-menu>
+      </b-menu-list>
       <!-- <q-tree :nodes="instanceTree" node-key="id" selected-color="primary" :selected.sync="instanceID" default-expand-all /> -->
     </div>
 
@@ -50,12 +52,20 @@
 <script>
 import SelectionMixin from "../mixins/selections";
 import UtilsMixin from "../mixins/utils";
+import TreeMenu from "./TreeMenu";
 
 export default {
   props: ["gates", "instances", "file"],
   mixins: [SelectionMixin, UtilsMixin],
+  components: { TreeMenu },
   data() {
     return {};
+  },
+  methods: {
+    selectInstance(id) {
+      console.log(id);
+      this.instanceID = id;
+    },
   },
 };
 </script>

@@ -5,6 +5,7 @@
     :options="monacoOptions"
     @change="onChange"
     @editorWillMount="onEditorWillMount"
+    @editorDidMount="onEditorDidMount"
     class="editor"
     language="miniVerilog"
     theme="myCoolTheme"
@@ -18,7 +19,7 @@ import MonacoEditor from "vue-monaco";
 import parse from "../lib/vlgAntlrParser.js"; // parsec parser
 import walk from "../lib/vlgAntlrListener.js"; // parsec parser
 
-String.prototype.regexIndexOf = function(regex, startpos) {
+String.prototype.regexIndexOf = function (regex, startpos) {
   var indexOf = this.substring(startpos || 0).search(regex);
   return indexOf >= 0 ? indexOf + (startpos || 0) : indexOf;
 };
@@ -59,6 +60,10 @@ export default {
     onResize() {
       this.editor.layout();
     },
+    onEditorDidMount(editor) {
+      console.log("editorDidMount");
+      this.lint(editor.getValue());
+    },
     onEditorWillMount() {
       const monaco = this.monaco;
       monaco.languages.register({ id: "miniVerilog" });
@@ -77,18 +82,46 @@ export default {
         folding: {
           offSide: false,
           markers: {
-            start: new RegExp("^(?:\\s*|.*(?!\\/[\\/\\*])[^\\w])(?:begin|module)\\b"),
-            end: new RegExp("^(?:\\s*|.*(?!\\/[\\/\\*])[^\\w])(?:end|endmodule)\\b"),
+            start: new RegExp(
+              "^(?:\\s*|.*(?!\\/[\\/\\*])[^\\w])(?:begin|module)\\b"
+            ),
+            end: new RegExp(
+              "^(?:\\s*|.*(?!\\/[\\/\\*])[^\\w])(?:end|endmodule)\\b"
+            ),
           },
         },
       };
-      monaco.languages.setLanguageConfiguration("miniVerilog", miniVerilogConfig);
+      monaco.languages.setLanguageConfiguration(
+        "miniVerilog",
+        miniVerilogConfig
+      );
 
       // Register a tokens provider for the language
       monaco.languages.setMonarchTokensProvider("miniVerilog", {
         declarations: ["module"],
-        keywords: ["module", "endmodule", "begin", "end", "input", "output", "endmodule", "test", "assign"],
-        typeKeywords: ["and", "nand", "or", "nor", "xor", "not", "buffer", "wire", "control", "response"],
+        keywords: [
+          "module",
+          "endmodule",
+          "begin",
+          "end",
+          "input",
+          "output",
+          "endmodule",
+          "test",
+          "assign",
+        ],
+        typeKeywords: [
+          "and",
+          "nand",
+          "or",
+          "nor",
+          "xor",
+          "not",
+          "buffer",
+          "wire",
+          "control",
+          "response",
+        ],
         operators: ["=", "&", "|", "~", "^"],
         symbols: /[=><!~?:&|+\-*/^%]+/,
         // C# style strings
@@ -114,12 +147,18 @@ export default {
 
             // delimiters and operators
             [/[{}()]/, "@brackets"],
-            [/@symbols/, { cases: { "@operators": "operator", "@default": "" } }],
+            [
+              /@symbols/,
+              { cases: { "@operators": "operator", "@default": "" } },
+            ],
 
             // @ annotations.
             // As an example, we emit a debugging log message on these tokens.
             // Note: message are supressed during the first load -- change some lines to see them.
-            [/@\s*[a-zA-Z_$][\w$]*/, { token: "annotation", log: "annotation token: $0" }],
+            [
+              /@\s*[a-zA-Z_$][\w$]*/,
+              { token: "annotation", log: "annotation token: $0" },
+            ],
 
             // numbers
             [/\d*\.\d+([eE][-+]?\d+)?/, "number.float"],
@@ -186,13 +225,21 @@ export default {
               label: "testing",
               kind: monaco.languages.CompletionItemKind.Keyword,
               insertText: "testing(${1:condition})",
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertTextRules:
+                monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
             },
             {
               label: "ifelse",
               kind: monaco.languages.CompletionItemKind.Snippet,
-              insertText: ["if (${1:condition}) {", "\t$0", "} else {", "\t", "}"].join("\n"),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertText: [
+                "if (${1:condition}) {",
+                "\t$0",
+                "} else {",
+                "\t",
+                "}",
+              ].join("\n"),
+              insertTextRules:
+                monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: "If-Else Statement",
             },
           ];
@@ -204,25 +251,54 @@ export default {
       console.log("lint");
       if (text.length == 0) return [];
       const parseResult = parse(text);
+
       let newDecorations = parseResult.errors.map((e) => ({
-        range: new this.monaco.Range(e.startLine, e.startColumn, e.endLine, e.endColumn),
-          options: {
-            inlineClassName: "lintErrorUnderline",
-            glyphMarginClassName: e.severity == "error" ? "fas fa-exclamation-triangle marginError" : "fas fa-exclamation-circle marginWarning",
-            glyphMarginHoverMessage: { value: e.msg }
-          }
+        range: new this.monaco.Range(
+          e.startLine,
+          e.startColumn,
+          e.endLine,
+          e.endColumn
+        ),
+        options: {
+          inlineClassName: "lintErrorUnderline",
+          glyphMarginClassName:
+            e.severity == "error"
+              ? "fas fa-exclamation-triangle marginError"
+              : "fas fa-exclamation-circle marginWarning",
+          glyphMarginHoverMessage: { value: e.msg },
+        },
       }));
 
       if (parseResult.errors.length == 0) {
         const walkResult = walk(parseResult.ast);
-        console.log(walkResult);
+        console.log("walkResult: ", walkResult);
+        newDecorations = newDecorations.concat(
+          walkResult.errors.map((e) => ({
+            range: new this.monaco.Range(
+              e.startLine,
+              e.startColumn,
+              e.endLine,
+              e.endColumn
+            ),
+            options: {
+              inlineClassName: "lintErrorUnderline",
+              glyphMarginClassName:
+                e.severity == "error"
+                  ? "fas fa-exclamation-triangle marginError"
+                  : "fas fa-exclamation-circle marginWarning",
+              glyphMarginHoverMessage: { value: e.msg },
+            },
+          }))
+        );
 
-  // TODO: convert walkResult.errors to add to newdecorations
-
+        // TODO: convert walkResult.errors to add to newdecorations
       }
 
       console.log("newDecorations: ", newDecorations);
-      this.lintDecorations = this.editor.deltaDecorations(this.lintDecorations, newDecorations);
+      this.lintDecorations = this.editor.deltaDecorations(
+        this.lintDecorations,
+        newDecorations
+      );
     },
   },
 };
@@ -248,3 +324,4 @@ export default {
   text-decoration: darksalmon underline wavy;
 }
 </style>
+ 

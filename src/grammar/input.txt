@@ -1,9 +1,3 @@
-module Foo (input x,y,
-            output A);
-  wire b;
-  and(A,x,y);
-endmodule
-
-module Main;
-  wire c;
+module Main(input a,b, output X);
+  assign X = a & ~(a | b);
 endmodule

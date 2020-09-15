@@ -95,7 +95,7 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "Y\u0126\u0003\u0002\u0002\u0002[\u012b\u0003\u0002\u0002\u0002]\u012d",
     "\u0003\u0002\u0002\u0002_`\u0007o\u0002\u0002`a\u0007q\u0002\u0002a",
     "b\u0007f\u0002\u0002bc\u0007w\u0002\u0002cd\u0007n\u0002\u0002de\u0007",
-    "g\u0002\u0002e\u0004\u0003\u0002\u0002\u0002fg\u0007o\u0002\u0002gh",
+    "g\u0002\u0002e\u0004\u0003\u0002\u0002\u0002fg\u0007O\u0002\u0002gh",
     "\u0007c\u0002\u0002hi\u0007k\u0002\u0002ij\u0007p\u0002\u0002j\u0006",
     "\u0003\u0002\u0002\u0002kl\u0007=\u0002\u0002l\b\u0003\u0002\u0002\u0002",
     "mn\u0007g\u0002\u0002no\u0007p\u0002\u0002op\u0007f\u0002\u0002pq\u0007",
@@ -247,8 +247,8 @@ vlgLexer.XOR = 31;
 vlgLexer.ASSIGN = 32;
 vlgLexer.PLUS = 33;
 vlgLexer.MINUS = 34;
-vlgLexer.AMPERSAND = 35;
-vlgLexer.BAR = 36;
+vlgLexer.AND = 35;
+vlgLexer.OR = 36;
 vlgLexer.ONE_LINE_COMMENT = 37;
 vlgLexer.BLOCK_COMMENT = 38;
 vlgLexer.WHITE_SPACE = 39;
@@ -259,7 +259,7 @@ vlgLexer.prototype.channelNames = [ "DEFAULT_TOKEN_CHANNEL", "HIDDEN" ];
 
 vlgLexer.prototype.modeNames = [ "DEFAULT_MODE" ];
 
-vlgLexer.prototype.literalNames = [ null, "'module'", "'main'", "';'", "'endmodule'", 
+vlgLexer.prototype.literalNames = [ null, "'module'", "'Main'", "';'", "'endmodule'", 
                                     "'('", "','", "')'", "'input'", "'output'", 
                                     "'test'", "'begin'", "'end'", "'{'", 
                                     "'}'", "'#'", "'wire'", "'and'", "'or'", 
@@ -274,9 +274,8 @@ vlgLexer.prototype.symbolicNames = [ null, null, null, null, null, null,
                                      null, null, null, null, null, null, 
                                      null, null, null, "NOT", "NEG", "NAND", 
                                      "NOR", "XOR", "ASSIGN", "PLUS", "MINUS", 
-                                     "AMPERSAND", "BAR", "ONE_LINE_COMMENT", 
-                                     "BLOCK_COMMENT", "WHITE_SPACE", "IDENTIFIER", 
-                                     "UNSIGNED_NUMBER" ];
+                                     "AND", "OR", "ONE_LINE_COMMENT", "BLOCK_COMMENT", 
+                                     "WHITE_SPACE", "IDENTIFIER", "UNSIGNED_NUMBER" ];
 
 vlgLexer.prototype.ruleNames = [ "T__0", "T__1", "T__2", "T__3", "T__4", 
                                  "T__5", "T__6", "T__7", "T__8", "T__9", 
@@ -284,11 +283,11 @@ vlgLexer.prototype.ruleNames = [ "T__0", "T__1", "T__2", "T__3", "T__4",
                                  "T__15", "T__16", "T__17", "T__18", "T__19", 
                                  "T__20", "T__21", "T__22", "T__23", "T__24", 
                                  "T__25", "NOT", "NEG", "NAND", "NOR", "XOR", 
-                                 "ASSIGN", "PLUS", "MINUS", "AMPERSAND", 
-                                 "BAR", "ONE_LINE_COMMENT", "BLOCK_COMMENT", 
-                                 "WHITE_SPACE", "IDENTIFIER", "UNSIGNED_NUMBER", 
-                                 "BINARY_NUMBER", "BINARY_BASE", "BINARY_VALUE", 
-                                 "BINARY_DIGIT", "DECIMAL_DIGIT" ];
+                                 "ASSIGN", "PLUS", "MINUS", "AND", "OR", 
+                                 "ONE_LINE_COMMENT", "BLOCK_COMMENT", "WHITE_SPACE", 
+                                 "IDENTIFIER", "UNSIGNED_NUMBER", "BINARY_NUMBER", 
+                                 "BINARY_BASE", "BINARY_VALUE", "BINARY_DIGIT", 
+                                 "DECIMAL_DIGIT" ];
 
 vlgLexer.prototype.grammarFileName = "vlg.g4";
 

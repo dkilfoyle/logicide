@@ -7,6 +7,10 @@ Vue.use(vgl);
 import "@fortawesome/fontawesome-free/css/all.css";
 import "@fortawesome/fontawesome-free/js/all.js";
 
+import Buefy from "buefy";
+import "buefy/dist/buefy.css";
+Vue.use(Buefy);
+
 import App from "./App.vue";
 
 Vue.config.productionTip = false;

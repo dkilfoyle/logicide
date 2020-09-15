@@ -19,10 +19,14 @@ export default {
       return this.getOutputs(instanceId).some((x) => x == id) || this.getGate(id).logic == "response";
     },
     getGate: function(id) {
-      return this.gates.find((x) => x.id == id);
+      const res = this.gates.find((x) => x.id == id);
+      if (!res) throw new Error(`getGate(${id}): gate ${id} does not exist`);
+      return res;
     },
     getInstance: function(id) {
-      return this.instances.find((x) => x.id == id);
+      const res = this.instances.find((x) => x.id == id);
+      if (!res) throw new Error(`getInstance(${id}): instance ${id} does not exist`);
+      return res;
     },
   },
 };

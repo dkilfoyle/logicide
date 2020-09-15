@@ -6,22 +6,22 @@ export default {
     instances: function() {
       this.instanceID = "main";
       this.showWhichGates = "all";
-    }
+    },
   },
   computed: {
     selectedInstance: function() {
       return this.getInstance(this.instanceID);
     },
     instanceTree: function() {
-      const buildNode = id => {
-        const instance = this.instances.find(x => x.id == id);
+      const buildNode = (id) => {
+        const instance = this.instances.find((x) => x.id == id);
         return {
           label: instance.id.slice(instance.id.lastIndexOf("_") + 1),
           id: instance.id,
-          children: instance.instances.map(ci => buildNode(ci))
+          nodes: instance.instances.map((ci) => buildNode(ci)),
         };
       };
-      return [buildNode("main")];
+      return buildNode("main");
     },
     selectedGates: function() {
       switch (this.showWhichGates) {
@@ -34,22 +34,13 @@ export default {
         case "inputs":
           return [...this.getInputs(this.instanceID)];
         case "ports":
-          return [
-            ...this.getInputs(this.instanceID),
-            ...this.getOutputs(this.instanceID)
-          ];
+          return [...this.getInputs(this.instanceID), ...this.getOutputs(this.instanceID)];
       }
       return [];
     },
     allInstanceGates: function() {
-      return [
-        ...new Set([
-          ...this.getInputs(this.instanceID),
-          ...this.getGates(this.instanceID),
-          ...this.getOutputs(this.instanceID)
-        ])
-      ];
-    }
+      return [...new Set([...this.getInputs(this.instanceID), ...this.getGates(this.instanceID), ...this.getOutputs(this.instanceID)])];
+    },
   },
-  methods: {}
+  methods: {},
 };

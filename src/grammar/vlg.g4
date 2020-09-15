@@ -13,7 +13,7 @@ modules: (module)+ module_main EOF;
 /* Module declaration ============================================== */
 
 module_main:
-	'module' 'main' ';' module_item* test_bench? 'endmodule';
+	'module' 'Main' (module_ports)? ';' module_item* test_bench? 'endmodule';
 
 module:
 	'module' IDENTIFIER (module_ports)? ';' module_item* 'endmodule';
@@ -42,8 +42,9 @@ time_assignment_list: time_assignment (',' time_assignment)*;
 
 time_assignment: IDENTIFIER '=' val = UNSIGNED_NUMBER;
 
-/* module statements ============================================== */ net_declaration:
-	'wire' identifier_list ';';
+// module statements ==============================================  
+
+net_declaration: 'wire' identifier_list ';';
 
 gate_declaration:
 	gate_type (instanceid = IDENTIFIER)? '(' ids = identifier_list ')' ';';
@@ -57,31 +58,39 @@ gate_type:
 	| 'control'
 	| 'response';
 
-continuous_assign: 'assign' list_of_assignments;
+continuous_assign: 'assign' list_of_assignments ';';
 list_of_assignments: assignment (',' assignment)*;
-assignment: IDENTIFIER '=' expression;
+assignment: IDENTIFIER '=' expr;
 
 module_instantiation:
-	moduleid = IDENTIFIER instanceid = IDENTIFIER list_of_module_connections ';';
-list_of_module_connections:
+	moduleid = IDENTIFIER instanceid = IDENTIFIER module_connections_list ';';
+module_connections_list:
 	'(' named_port_connection (',' named_port_connection)* ')';
 named_port_connection:
-	'.' paramid = IDENTIFIER '(' variableid = IDENTIFIER ')';
+	'.' port = IDENTIFIER '(' value = IDENTIFIER ')';
 
 /* Expressions ======================================================= */
 
-expression:
-	primary
-	| unary_operator primary
-	| expression binary_operator expression;
+// expression: primary | unary_operator primary | expression binary_operator expression;
 
-primary: number | IDENTIFIER | '(' expression ')';
+// primary: number | IDENTIFIER | '(' expression ')';
 
-unary_operator: NOT | NEG | AMPERSAND | NAND | BAR | NOR | XOR;
-binary_operator: AMPERSAND | BAR | XOR;
+// unary_operator: NOT | NEG | AMPERSAND | NAND | BAR | NOR | XOR; binary_operator: AMPERSAND | BAR
+// | XOR;
+
+expr:
+	NEG expr					# negateExpr
+	| expr binary_operator expr	# binaryExpr
+	| '(' expr ')'				# parenExpr
+	| IDENTIFIER				# idExpr;
+
+binary_operator: AND | NAND | OR | NOR | XOR;
 
 /* Token groups ====================================================== */
 
+defined_connection_id: IDENTIFIER;
+defined_connection_id_list:
+	defined_connection_id (',' defined_connection_id)*;
 identifier_list: IDENTIFIER (',' IDENTIFIER)*;
 number: UNSIGNED_NUMBER | BINARY_NUMBER;
 
@@ -95,8 +104,8 @@ XOR: '^';
 ASSIGN: '=';
 PLUS: '+';
 MINUS: '-';
-AMPERSAND: '&';
-BAR: '|';
+AND: '&';
+OR: '|';
 
 ONE_LINE_COMMENT:
 	'//' .*? ('\r')? (EOF | '\n') -> channel(HIDDEN);

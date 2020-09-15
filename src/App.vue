@@ -15,7 +15,13 @@
               <editor ref="editor1" tabId="Scratch" v-model="sourceFiles.Scratch"></editor>
             </gl-component>
           </gl-stack>
-          <gl-component id="consoleComponent" title="Console" @resize="onResizeTerminalWindow" @open="onOpenTerminalWindow" :closable="false">
+          <gl-component
+            id="consoleComponent"
+            title="Console"
+            @resize="onResizeTerminalWindow"
+            @open="onOpenTerminalWindow"
+            :closable="false"
+          >
             <TerminalView
               ref="terminal"
               auto-size
@@ -31,10 +37,14 @@
         </gl-col>
         <gl-col>
           <gl-component title="Gates" class="section myBulma">
-            <gates :file="compiled.sourceFile" :gates="compiled.gates" :instances="compiled.instances"></gates>
+            <gates
+              :file="compiled.sourceFile"
+              :gates="compiled.gates"
+              :instances="compiled.instances"
+            ></gates>
           </gl-component>
           <gl-component title="Schematic">
-            <h1>Component 3</h1>
+            <schematic :gates="compiled.gates" :instances="compiled.instances"></schematic>
           </gl-component>
         </gl-col>
       </gl-row>
@@ -48,6 +58,7 @@ import "bulma/css/bulma.css";
 import TerminalView from "./components/TerminalView";
 import Editor from "./components/Editor";
 import Gates from "./components/Gates";
+import Schematic from "./components/Schematic";
 
 const Chalk = require("chalk");
 let options = { enabled: true, level: 2 };
@@ -58,8 +69,12 @@ const shortJoin = (strs) => {
   else return x.slice(0, 40) + "...";
 };
 
-import vlgParser from "./lib/vlgParser.js";
-import vlgCompiler from "./lib/vlgCompiler.js";
+// import vlgParser from "./lib/vlgParser.js";
+// import vlgCompiler from "./lib/vlgCompiler.js";
+
+import parse from "./lib/vlgAntlrParser.js"; // parsec parser
+import walk from "./lib/vlgAntlrListener.js"; // parsec parser
+import compile from "./lib/vlgModuleCompiler.js"; // parsec parser
 
 import UtilsMixin from "./mixins/utils";
 
@@ -69,6 +84,7 @@ export default {
     TerminalView,
     Editor,
     Gates,
+    Schematic,
   },
   mixins: [UtilsMixin],
   data() {
@@ -117,39 +133,66 @@ export default {
     compile() {
       const newCompiled = {};
       newCompiled.sourceFile = this.codeTab;
-      this.termWriteln(chalk.bold.green("• Compiling: ") + chalk.yellow(this.codeTab));
+      this.termWriteln(
+        chalk.bold.green("• Compiling: ") + chalk.yellow(this.codeTab)
+      );
 
-      const parse = vlgParser(this.code).parseState;
-      console.log("Parse: ", this.stripReactive(parse));
-      if (parse.isError) {
+      const parseResult = parse(this.code);
+      if (parseResult.errors.length > 0) {
         newCompiled.state = "error";
-        this.termWriteln(chalk.red("└── Parser error: ") + parse.error);
+        this.termWriteln(
+          chalk.red("└── Syntax error(s): ") + parseResult.errors.length
+        );
+        return;
+      }
+
+      const walkResult = walk(parseResult.ast);
+      if (walkResult.errors.length > 0) {
+        newCompiled.state = "error";
+        this.termWriteln(
+          chalk.red("└── Semantic error(s): ") + walkResult.errors.length
+        );
         return;
       }
 
       newCompiled.state = "success";
-      newCompiled.parseTree = parse.result;
+      newCompiled.parseTree = walkResult;
       this.termWriteln(
-        chalk.green(`├── Parsed ${newCompiled.parseTree.length} modules: ${chalk.white(newCompiled.parseTree.map((x) => x.id).join(", "))}`)
+        chalk.green(
+          `├── Parsed ${
+            newCompiled.parseTree.modules.length
+          } modules: ${chalk.white(
+            newCompiled.parseTree.modules.map((x) => x.id).join(", ")
+          )}`
+        )
       );
 
-      // const walk = vlgWalker(newCompiled.parseTree);
-      const walk = vlgCompiler(newCompiled.parseTree);
-      console.log("Compiled: ", this.stripReactive(walk));
+      const compileResult = compile(walkResult.modules);
+      console.log("Compiled: ", this.stripReactive(compileResult));
 
-      newCompiled.instances = [...walk.instances];
-      newCompiled.gates = [...walk.gates];
+      newCompiled.instances = [...compileResult.instances];
+      newCompiled.gates = [...compileResult.gates];
 
       this.termWriteln(
         chalk.green(
-          `├── Generated ${newCompiled.instances.length} instances: ${chalk.white(shortJoin(newCompiled.instances.map((x) => x.id)))}`
+          `├── Generated ${
+            newCompiled.instances.length
+          } instances: ${chalk.white(
+            shortJoin(newCompiled.instances.map((x) => x.id))
+          )}`
         )
       );
       this.termWriteln(
-        chalk.green(`└── Generated ${newCompiled.gates.length} gates: ${chalk.white(shortJoin(newCompiled.gates.map((x) => x.id)))}`)
+        chalk.green(
+          `└── Generated ${newCompiled.gates.length} gates: ${chalk.white(
+            shortJoin(newCompiled.gates.map((x) => x.id))
+          )}`
+        )
       );
 
-      this.termWriteln(chalk.green.inverse(" DONE ") + "  Compiled successfully");
+      this.termWriteln(
+        chalk.green.inverse(" DONE ") + "  Compiled successfully"
+      );
 
       newCompiled.timestamp = Date.now();
       newCompiled.simulation = { ready: false };
