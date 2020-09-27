@@ -1,23 +1,16 @@
 <template>
   <div class="columns">
-    <div class="column is-narrow">
-      <b-menu-list :label="file">
-        <tree-menu :label="instanceTree.label" :nodes="instanceTree.nodes" @selected="selectInstance"></tree-menu>
-      </b-menu-list>
-      <!-- <q-tree :nodes="instanceTree" node-key="id" selected-color="primary" :selected.sync="instanceID" default-expand-all /> -->
-    </div>
-
     <div class="column">
       <div class="control">
-        <label for="" class="radio">
+        <label for class="radio">
           <input type="radio" name="showWhichGates" id="all" />
           All
         </label>
-        <label for="" class="radio">
+        <label for class="radio">
           <input type="radio" name="showWhichGates" id="inputs" />
           Inputs
         </label>
-        <label for="" class="radio">
+        <label for class="radio">
           <input type="radio" name="showWhichGates" id="outputs" />
           Outputs
         </label>
@@ -52,12 +45,10 @@
 <script>
 import SelectionMixin from "../mixins/selections";
 import UtilsMixin from "../mixins/utils";
-import TreeMenu from "./TreeMenu";
 
 export default {
   props: ["gates", "instances", "file"],
   mixins: [SelectionMixin, UtilsMixin],
-  components: { TreeMenu },
   data() {
     return {};
   },

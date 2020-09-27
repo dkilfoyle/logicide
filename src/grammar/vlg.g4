@@ -34,11 +34,12 @@ module_item:
 
 test_bench: 'test' 'begin' test_time* 'end';
 
-test_time: time_stamp '{' time_assignment_list '}' ';';
+test_time: time_stamp time_assignment_list? ';';
 
 time_stamp: '#' UNSIGNED_NUMBER;
 
-time_assignment_list: time_assignment (',' time_assignment)*;
+time_assignment_list:
+	'{' time_assignment (',' time_assignment)* '}';
 
 time_assignment: IDENTIFIER '=' val = UNSIGNED_NUMBER;
 

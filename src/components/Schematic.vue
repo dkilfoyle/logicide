@@ -1,7 +1,6 @@
-
 <template>
   <div>
-    <svg ref="svgSchematic" id="svgSchematic" height="70vh" width="100%" />
+    <svg ref="svgSchematic" id="svgSchematic" />
   </div>
 </template>
 
@@ -18,12 +17,20 @@ export default {
   mixins: [UtilsMixin],
 
   data() {
-    return { elkData: {}, g: {}, selectedGates: [] };
+    return {
+      elkData: {},
+      g: {},
+      svg: null,
+      selectedGates: [],
+      width: null,
+      height: null,
+    };
   },
   watch: {
     gates: {
-      handler() {
-        this.$nextTick(() => this.buildNetlist());
+      handler(newGates) {
+        if (newGates && newGates.length)
+          this.$nextTick(() => this.buildNetlist());
       },
       immediate: true,
       deep: true,
@@ -34,7 +41,19 @@ export default {
     onSelect() {
       console.log(this.g.root);
     },
+    onResize(width, height) {
+      // console.log("Schematic onResize: ", width, height);
+      this.width = width;
+      this.height = height;
+      this.buildNetlist();
+    },
     buildNetlist() {
+      if (this.width == null) return; // prevent building before properly sized
+      // console.log("Schematic buildNetList: ", this.width, this.height);
+
+      this.svg.attr("width", this.width);
+      this.svg.attr("height", this.height);
+
       this.elkData = {
         id: "main",
         hwMeta: { name: "main", maxId: 200 },
@@ -49,9 +68,8 @@ export default {
         edges: [],
       };
 
+      // await here
       this.buildInstance(this.elkData);
-      console.log("Schematic: ", this.stripReactive(this.elkData));
-      //console.log(JSON.stringify(this.elkData));
 
       const filter = this.g.defs
         .append("filter")
@@ -89,7 +107,7 @@ export default {
 
       this.g.bindData(this.elkData).then(() => {
         // add click handlers to all non-port gates
-        console.log("buildNetList1: ", this.g.root);
+        // console.log("buildNetList1: ", this.g.root);
         this.instances.forEach((instance) =>
           instance.gates.forEach((gateId) => {
             const node = this.g.root.select("#node-id-" + gateId + "_gate");
@@ -110,7 +128,7 @@ export default {
         );
       });
     },
-    buildInstance(currentNet) {
+    async buildInstance(currentNet) {
       const currentInstance = this.getInstance(currentNet.id);
       // console.log(
       //   "Building ",
@@ -266,24 +284,17 @@ export default {
       });
     },
 
-    zoom() {
+    onZoom() {
       this.g.root.attr("transform", d3.event.transform);
     },
   },
 
   mounted() {
-    const width = this.$refs.svgSchematic.clientWidth;
-    const height = this.$refs.svgSchematic.clientHeight;
-    var svg = d3
-      .select("#svgSchematic")
-      .attr("width", width)
-      .attr("height", height);
-    this.g = new d3.HwSchematic(svg);
+    this.svg = d3.select("#svgSchematic");
+    this.g = new d3.HwSchematic(this.svg);
     var zoom = d3.zoom();
-    zoom.on("zoom", this.zoom);
-    svg.call(zoom).on("dblclick.zoom", null);
-
-    // this.buildNetlist();
+    zoom.on("zoom", this.onZoom);
+    this.svg.call(zoom).on("dblclick.zoom", null);
   },
 };
 </script>

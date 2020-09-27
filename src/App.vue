@@ -3,48 +3,90 @@
     <golden-layout class="hscreen" :header-height="36" :showPopoutIcon="false">
       <gl-row>
         <gl-col :width="10">
-          <gl-component :closable="false" title="Menu">
-            <button class="button" @click="compile">Compile</button>
-            <button class="button" @click="printTerminal">Log to terminal</button>
+          <gl-component class="myMenu" :closable="false" title="Files">
+            <liquor-tree
+              :data="sourceTree"
+              :options="{ nodeIndent: 14 }"
+              @node:selected="onCodeTreeSelection"
+            ></liquor-tree>Options
+            Update on type
+            Compile
+            Gates
+            Schematic
+          </gl-component>
+          <gl-component class="myMenu" :closable="false" title="Outline">
+            <liquor-tree
+              ref="outline"
+              :options="{ nodeIndent: 14 }"
+              @node:selected="onModuleTreeSelection"
+            ></liquor-tree>
           </gl-component>
         </gl-col>
 
         <gl-col :width="55">
-          <gl-stack :height="80" v-model="codeTab">
-            <gl-component @resize="onResizeEditorWindow('editor1')" title="Editor">
-              <editor ref="editor1" tabId="Scratch" v-model="sourceFiles.Scratch"></editor>
+          <gl-stack :height="80" v-model="currentFileTab" :closable="false">
+            <gl-component
+              :tabId="openFile.name"
+              v-for="openFile in openFiles"
+              :key="openFile.name"
+              @resize="onResizeEditorWindow(openFile.name + '_editor')"
+              :title="openFile.name"
+            >
+              <editor
+                :ref="openFile.name + '_editor'"
+                :tabId="openFile.name"
+                v-model="openFile.code"
+                @passLint="onPassLint"
+                @onDidChangeModelContent="onChangeEditorModelContent"
+              ></editor>
             </gl-component>
           </gl-stack>
-          <gl-component
-            id="consoleComponent"
-            title="Console"
-            @resize="onResizeTerminalWindow"
-            @open="onOpenTerminalWindow"
-            :closable="false"
-          >
-            <TerminalView
-              ref="terminal"
-              auto-size
-              :options="{
-                scrollback: 5000,
-                disableStdin: true,
-                useFlowControl: true,
-              }"
-              title="MyConsole"
-              dark-mode
-            />
-          </gl-component>
+          <gl-stack>
+            <gl-component
+              id="consoleComponent"
+              title="Console"
+              @resize="onResizeTerminalWindow"
+              @open="onOpenTerminalWindow"
+              :closable="false"
+            >
+              <TerminalView
+                ref="terminal"
+                auto-size
+                :options="{
+                  scrollback: 5000,
+                  disableStdin: true,
+                  useFlowControl: true,
+                }"
+                title="MyConsole"
+                dark-mode
+              />
+            </gl-component>
+            <gl-component title="Simulation" :closable="false">simulation</gl-component>
+          </gl-stack>
         </gl-col>
         <gl-col>
-          <gl-component title="Gates" class="section myBulma">
-            <gates
-              :file="compiled.sourceFile"
-              :gates="compiled.gates"
-              :instances="compiled.instances"
-            ></gates>
-          </gl-component>
-          <gl-component title="Schematic">
-            <schematic :gates="compiled.gates" :instances="compiled.instances"></schematic>
+          <gl-stack>
+            <gl-component title="Gates" class="myBulma">
+              <gates
+                :file="currentFile.name"
+                :gates="currentFile.gates"
+                :instances="currentFile.instances"
+              ></gates>
+            </gl-component>
+            <gl-component title="Traces"></gl-component>
+          </gl-stack>
+
+          <gl-component
+            title="Schematic"
+            @resize="onResizeSchematicWindow"
+            ref="schematicContainer"
+          >
+            <schematic
+              ref="schematic"
+              :file="currentFile.name"
+              :gates="currentFile.gates"
+              :instances="currentFile.instances"
+            ></schematic>
           </gl-component>
         </gl-col>
       </gl-row>
@@ -60,6 +102,8 @@ import Editor from "./components/Editor";
 import Gates from "./components/Gates";
 import Schematic from "./components/Schematic";
 
+import LiquorTree from "liquor-tree";
+
 const Chalk = require("chalk");
 let options = { enabled: true, level: 2 };
 const chalk = new Chalk.Instance(options);
@@ -72,11 +116,12 @@ const shortJoin = (strs) => {
 // import vlgParser from "./lib/vlgParser.js";
 // import vlgCompiler from "./lib/vlgCompiler.js";
 
-import parse from "./lib/vlgAntlrParser.js"; // parsec parser
-import walk from "./lib/vlgAntlrListener.js"; // parsec parser
-import compile from "./lib/vlgModuleCompiler.js"; // parsec parser
+import vlgParse from "./lib/vlgAntlrParser.js"; // parsec parser
+import vlgWalk from "./lib/vlgAntlrListener.js"; // parsec parser
+import vlgCompile from "./lib/vlgModuleCompiler.js"; // parsec parser
 
 import UtilsMixin from "./mixins/utils";
+import SelectionMixin from "./mixins/selections";
 
 export default {
   name: "App",
@@ -85,8 +130,9 @@ export default {
     Editor,
     Gates,
     Schematic,
+    LiquorTree,
   },
-  mixins: [UtilsMixin],
+  mixins: [UtilsMixin, SelectionMixin],
   data() {
     return {
       glOptions: {
@@ -95,97 +141,181 @@ export default {
         },
         content: [],
       },
-      codeTab: "Scratch",
-      sourceFiles: require("./files").default,
-      compiled: {
-        timestamp: null,
-        state: "uncompiled",
-        sourceFile: "",
-        parseTree: { lint: [] },
-        gates: [],
-        instances: [],
-        simulation: { ready: false, gates: {}, time: [], maxTime: 0 },
-      },
+
+      openFiles: {},
+      currentFileTab: "Scratch",
+
+      outlineReady: false,
+
+      sourceFiles: require("./files").SourceFiles,
+      sourceTree: require("./files").SourceTree,
+
+      // compiled: {
+      //   timestamp: null,
+      //   state: "uncompiled",
+      //   sourceFile: "",
+      //   parseTree: { lint: [] },
+      //   gates: [],
+      //   instances: [],
+      // },
     };
   },
   computed: {
+    currentFile() {
+      return this.currentFileTab != ""
+        ? this.openFiles[this.currentFileTab]
+        : {};
+    },
     code() {
-      return this.sourceFiles[this.codeTab];
+      return this.currentFile.code;
+    },
+    instances() {
+      return (this.currentFile && this.currentFile.instances) || [];
+    },
+    gates() {
+      return (this.currentFile && this.currentFile.gates) || [];
+    },
+  },
+  created() {
+    this.addFileTab("Scratch");
+  },
+  watch: {
+    instanceTree() {
+      console.log("watched instanceTree: ", this.instanceTree);
+      this.updateOutline();
     },
   },
   methods: {
+    onChangeEditorModelContent() {
+      console.log("onChangedEditorModelContent");
+      this.updateOutline();
+    },
+    updateOutline() {
+      this.$nextTick(() => this.$refs.outline.setModel(this.instanceTree));
+    },
+    addFileTab(sourceName) {
+      // todo: add source1, source2 if already exists
+      this.$set(this.openFiles, sourceName, {
+        name: sourceName,
+        code: this.sourceFiles[sourceName],
+        instances: [],
+        gates: [],
+        simulation: { ready: false, gates: {}, time: [], maxTime: 0 },
+        state: "uncompiled",
+      });
+
+      // this.currentFileTab = sourceName;
+      console.log(this.openFiles);
+    },
+    onCodeTreeSelection(node) {
+      if (node.children.length == 0) this.addFileTab(node.text);
+    },
+    onModuleTreeSelection(newSelection) {
+      console.log(newSelection);
+    },
     printTerminal() {
       console.log(this.sourceFiles);
       console.log(this.code);
     },
+
+    // resize events
+
     onResizeEditorWindow(editorName) {
-      this.$refs[editorName].onResize();
+      this.$refs[editorName][0].onResize();
     },
     onResizeTerminalWindow() {
       this.$nextTick(() => this.$refs.terminal.fit());
     },
+    onResizeSchematicWindow() {
+      const width = this.$refs.schematicContainer.container.width;
+      const height = this.$refs.schematicContainer.container.height;
+      this.$nextTick(() => this.$refs.schematic.onResize(width, height));
+    },
+
     onOpenTerminalWindow() {
       this.$refs.terminal.open();
     },
     termWriteln(str) {
       this.$refs.terminal.setContent(str);
     },
+
+    onPassLint(e) {
+      this.currentFile.parseResult = { ...e.parseResult };
+      this.currentFile.walkResult = { ...e.walkResult };
+
+      // compile turns [modules] into instances and gates
+      // needed for updating of gates table and schematic
+      this.currentFile.compileResult = vlgCompile(
+        this.currentFile.walkResult.modules
+      );
+      this.currentFile.state = "compiled";
+      this.currentFile.instances = [
+        ...this.currentFile.compileResult.instances,
+      ];
+      this.currentFile.gates = [...this.currentFile.compileResult.gates];
+    },
+
     compile() {
-      const newCompiled = {};
-      newCompiled.sourceFile = this.codeTab;
       this.termWriteln(
-        chalk.bold.green("• Compiling: ") + chalk.yellow(this.codeTab)
+        chalk.bold.green("• Compiling: ") + chalk.yellow(this.currentFileTab)
       );
 
-      const parseResult = parse(this.code);
-      if (parseResult.errors.length > 0) {
-        newCompiled.state = "error";
+      this.currentFile.parseResult = vlgParse(this.currentFile.code);
+      if (this.currentFile.parseResult.errors.length > 0) {
+        this.currentFile.state = "parseError";
         this.termWriteln(
-          chalk.red("└── Syntax error(s): ") + parseResult.errors.length
+          chalk.red("└── Syntax error(s): ") +
+            this.currentFile.parseResult.errors.length
         );
         return;
       }
 
-      const walkResult = walk(parseResult.ast);
-      if (walkResult.errors.length > 0) {
-        newCompiled.state = "error";
+      this.currentFile.walkResult = vlgWalk(this.currentFile.parseResult.ast);
+      if (this.currentFile.walkResult.errors.length > 0) {
+        this.currentFile.state = "walkError";
         this.termWriteln(
-          chalk.red("└── Semantic error(s): ") + walkResult.errors.length
+          chalk.red("└── Semantic error(s): ") +
+            this.currentFile.walkResult.errors.length
         );
         return;
       }
 
-      newCompiled.state = "success";
-      newCompiled.parseTree = walkResult;
       this.termWriteln(
         chalk.green(
           `├── Parsed ${
-            newCompiled.parseTree.modules.length
+            this.currentFile.walkResult.modules.length
           } modules: ${chalk.white(
-            newCompiled.parseTree.modules.map((x) => x.id).join(", ")
+            this.currentFile.walkResult.modules.map((x) => x.id).join(", ")
           )}`
         )
       );
 
-      const compileResult = compile(walkResult.modules);
-      console.log("Compiled: ", this.stripReactive(compileResult));
-
-      newCompiled.instances = [...compileResult.instances];
-      newCompiled.gates = [...compileResult.gates];
+      this.currentFile.compileResult = vlgCompile(
+        this.currentFile.walkResult.modules
+      );
+      this.currentFile.state = "compiled";
+      this.currentFile.instances = [
+        ...this.currentFile.compileResult.instances,
+      ];
+      this.currentFile.gates = [...this.currentFile.compileResult.gates];
+      console.log(
+        "Compiled: ",
+        this.stripReactive(this.currentFile.compileResult)
+      );
 
       this.termWriteln(
         chalk.green(
           `├── Generated ${
-            newCompiled.instances.length
+            this.currentFile.instances.length
           } instances: ${chalk.white(
-            shortJoin(newCompiled.instances.map((x) => x.id))
+            shortJoin(this.currentFile.instances.map((x) => x.id))
           )}`
         )
       );
       this.termWriteln(
         chalk.green(
-          `└── Generated ${newCompiled.gates.length} gates: ${chalk.white(
-            shortJoin(newCompiled.gates.map((x) => x.id))
+          `└── Generated ${this.currentFile.gates.length} gates: ${chalk.white(
+            shortJoin(this.currentFile.gates.map((x) => x.id))
           )}`
         )
       );
@@ -194,10 +324,10 @@ export default {
         chalk.green.inverse(" DONE ") + "  Compiled successfully"
       );
 
-      newCompiled.timestamp = Date.now();
-      newCompiled.simulation = { ready: false };
-      this.compiled = newCompiled; // do it this way so that Vue does not propogate reactive changes until this.compiled is fully updated
+      this.currentFile.timestamp = Date.now();
+      this.currentFile.simulation = { ready: false };
     },
+    simulate() {},
   },
 };
 </script>
@@ -207,11 +337,20 @@ export default {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  margin: 5px;
+  padding: 5px;
+  background: whitesmoke;
 }
 
 .myBulma {
-  padding: 1rem;
+  padding: 0.8rem;
+}
+
+.myMenu {
+  padding: 0.1rem;
+}
+
+.glComponent {
+  background: white;
 }
 
 .editor {
@@ -271,5 +410,9 @@ export default {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(121, 121, 121, 0.7);
+}
+
+.tree-anchor {
+  padding-left: 0px;
 }
 </style>

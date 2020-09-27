@@ -15,15 +15,18 @@ export default {
     instanceTree: function() {
       const buildNode = (id) => {
         const instance = this.instances.find((x) => x.id == id);
-        return {
-          label: instance.id.slice(instance.id.lastIndexOf("_") + 1),
-          id: instance.id,
-          nodes: instance.instances.map((ci) => buildNode(ci)),
+        const res = {
+          text: instance.id.slice(instance.id.lastIndexOf("_") + 1),
+          //id: instance.id,
         };
+        if (instance.instances.length > 0) res.children = instance.instances.map((ci) => buildNode(ci));
+        return res;
       };
-      return buildNode("main");
+      if (this.instances.length > 0) return [buildNode("main")];
+      else return [];
     },
     selectedGates: function() {
+      if (!this.instances.length) return [];
       switch (this.showWhichGates) {
         case "all":
           return this.allInstanceGates;

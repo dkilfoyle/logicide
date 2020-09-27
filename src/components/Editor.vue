@@ -54,6 +54,7 @@ export default {
   },
   methods: {
     onChange(val) {
+      console.log("onChange");
       this.lint(val);
       this.$emit("input", val);
     },
@@ -63,6 +64,7 @@ export default {
     onEditorDidMount(editor) {
       console.log("editorDidMount");
       this.lint(editor.getValue());
+      // this.onChange(editor.getValue());
     },
     onEditorWillMount() {
       const monaco = this.monaco;
@@ -269,8 +271,9 @@ export default {
         },
       }));
 
+      let walkResult = { errors: [] };
       if (parseResult.errors.length == 0) {
-        const walkResult = walk(parseResult.ast);
+        walkResult = walk(parseResult.ast);
         console.log("walkResult: ", walkResult);
         newDecorations = newDecorations.concat(
           walkResult.errors.map((e) => ({
@@ -294,11 +297,14 @@ export default {
         // TODO: convert walkResult.errors to add to newdecorations
       }
 
-      console.log("newDecorations: ", newDecorations);
+      console.log("lint result: ", parseResult, walkResult);
       this.lintDecorations = this.editor.deltaDecorations(
         this.lintDecorations,
         newDecorations
       );
+
+      if ((parseResult.errors.length == 0) & (walkResult.errors.length == 0))
+        this.$emit("passLint", { parseResult, walkResult });
     },
   },
 };
@@ -324,4 +330,3 @@ export default {
   text-decoration: darksalmon underline wavy;
 }
 </style>
- 
