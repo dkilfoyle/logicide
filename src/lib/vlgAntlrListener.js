@@ -172,6 +172,7 @@ class Listener extends vlgListener {
   // assigns ===========================================
 
   enterAssignment(ctx) {
+    console.log("enterAssignment: ", ctx.IDENTIFIER().getText());
     this.assign = {
       id: ctx.IDENTIFIER().getText(),
       n: 0,
@@ -188,8 +189,28 @@ class Listener extends vlgListener {
   exitBinaryExpr(ctx) {
     const right = this.assign.stack.pop();
     const left = this.assign.stack.pop();
-    const op = ctx.binary_operator().getText();
+    let op = ctx.binary_operator().getText();
+    switch (op) {
+      case "&":
+        op = "and";
+        break;
+      case "~&":
+        op = "nand";
+        break;
+      case "|":
+        op = "or";
+        break;
+      case "~|":
+        op = "nor";
+        break;
+      case "^":
+        op = "xor";
+        break;
+      default:
+        throw new Error("invalid assign binary operator");
+    }
     const id = this.assign.id + "_" + this.assign.n;
+    this.curModule.wires.push(id); // intermediary gates need a wire for namespace mapping
     this.assign.gates.push({
       type: "gate",
       id,
@@ -213,6 +234,8 @@ class Listener extends vlgListener {
   exitNegateExpr(ctx) {
     const right = this.assign.stack.pop();
     const id = this.assign.id + "_" + this.assign.n;
+    console.log("exitNegateExpr: ", id, right);
+    this.curModule.wires.push(id); // intermediary gates need a wire for namespace mapping
     this.assign.gates.push({
       type: "gate",
       id,

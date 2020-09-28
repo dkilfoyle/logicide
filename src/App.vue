@@ -68,6 +68,7 @@
           <gl-stack>
             <gl-component title="Gates" class="myBulma">
               <gates
+                :state="currentFile.state"
                 :file="currentFile.name"
                 :gates="currentFile.gates"
                 :instances="currentFile.instances"
@@ -83,7 +84,8 @@
           >
             <schematic
               ref="schematic"
-              :file="currentFile.name"
+              :state="currentFile.state"
+              :file="currentFile"
               :gates="currentFile.gates"
               :instances="currentFile.instances"
             ></schematic>
@@ -245,14 +247,15 @@ export default {
 
       // compile turns [modules] into instances and gates
       // needed for updating of gates table and schematic
+
       this.currentFile.compileResult = vlgCompile(
         this.currentFile.walkResult.modules
       );
-      this.currentFile.state = "compiled";
       this.currentFile.instances = [
         ...this.currentFile.compileResult.instances,
       ];
       this.currentFile.gates = [...this.currentFile.compileResult.gates];
+      this.currentFile.state = "compiled " + Date.now();
     },
 
     compile() {

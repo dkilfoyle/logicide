@@ -17,7 +17,7 @@ module DeMux (
 endmodule
 
 module Main (
-  input sel, clock
+  input sel, clock,
   output Y, Z);
 
   // "clock" is an automatic wire in main

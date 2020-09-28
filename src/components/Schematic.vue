@@ -13,7 +13,7 @@ import UtilsMixin from "../mixins/utils";
 
 export default {
   // name: 'ComponentName',
-  props: ["gates", "instances", "simulation"],
+  props: ["gates", "instances", "simulation", "state"],
   mixins: [UtilsMixin],
 
   data() {
@@ -27,14 +27,19 @@ export default {
     };
   },
   watch: {
-    gates: {
-      handler(newGates) {
-        if (newGates && newGates.length)
-          this.$nextTick(() => this.buildNetlist());
-      },
-      immediate: true,
-      deep: true,
+    state() {
+      console.log("stateWatcher: ", this.state);
+      if (this.state.startsWith("compiled"))
+        this.$nextTick(() => this.buildNetlist());
     },
+    // state: {
+    // handler(newGates) {
+    //   if (newGates && newGates.length)
+    //     this.$nextTick(() => this.buildNetlist());
+    // },
+    // immediate: true,
+    // deep: true,
+    // },
   },
 
   methods: {
@@ -165,6 +170,7 @@ export default {
 
         // single output unless response
         if (gate.logic != "response") {
+          console.log("gate: ", gate);
           gateNet.ports.push({
             id: gate.id,
             hwMeta: { name: this.getLocalId(gate.id) },

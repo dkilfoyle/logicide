@@ -303,8 +303,15 @@ export default {
         newDecorations
       );
 
-      if ((parseResult.errors.length == 0) & (walkResult.errors.length == 0))
-        this.$emit("passLint", { parseResult, walkResult });
+      console.log(parseResult.errors.length);
+      console.log(walkResult.errors.length);
+
+      if (parseResult.errors.length == 0 && walkResult.errors.length == 0) {
+        console.log("emit passlint");
+        this.$nextTick(() =>
+          this.$emit("passLint", { parseResult, walkResult })
+        );
+      }
     },
   },
 };
