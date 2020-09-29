@@ -1,12 +1,6 @@
 export default {
   data: function() {
-    return { instanceID: "main", showWhichGates: "all" };
-  },
-  watch: {
-    instances: function() {
-      this.instanceID = "main";
-      this.showWhichGates = "all";
-    },
+    return { showWhichGates: "all" };
   },
   computed: {
     selectedInstance: function() {
@@ -17,7 +11,7 @@ export default {
         const instance = this.instances.find((x) => x.id == id);
         const res = {
           text: instance.id.slice(instance.id.lastIndexOf("_") + 1),
-          //id: instance.id,
+          data: { id: instance.id },
         };
         if (instance.instances.length > 0) res.children = instance.instances.map((ci) => buildNode(ci));
         return res;

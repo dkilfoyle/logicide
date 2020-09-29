@@ -1,19 +1,10 @@
 <template>
   <div class="columns">
     <div class="column">
-      <div class="control">
-        <label for class="radio">
-          <input type="radio" name="showWhichGates" id="all" />
-          All
-        </label>
-        <label for class="radio">
-          <input type="radio" name="showWhichGates" id="inputs" />
-          Inputs
-        </label>
-        <label for class="radio">
-          <input type="radio" name="showWhichGates" id="outputs" />
-          Outputs
-        </label>
+      <div class="block">
+        <b-radio v-model="showWhichGates" name="showWhichGates" native-value="all">All</b-radio>
+        <b-radio v-model="showWhichGates" name="showWhichGates" native-value="inputs">Inputs</b-radio>
+        <b-radio v-model="showWhichGates" name="showWhichGates" native-value="outputs">Outputs</b-radio>
       </div>
 
       <div class="table-container"></div>
@@ -47,17 +38,12 @@ import SelectionMixin from "../mixins/selections";
 import UtilsMixin from "../mixins/utils";
 
 export default {
-  props: ["gates", "instances", "file"],
+  props: ["gates", "instances", "file", "instanceID"],
   mixins: [SelectionMixin, UtilsMixin],
   data() {
     return {};
   },
-  methods: {
-    selectInstance(id) {
-      console.log(id);
-      this.instanceID = id;
-    },
-  },
+  methods: {},
 };
 </script>
 

@@ -54,7 +54,7 @@ export default {
   },
   methods: {
     onChange(val) {
-      console.log("onChange");
+      // console.log("onChange");
       this.lint(val);
       this.$emit("input", val);
     },
@@ -62,7 +62,7 @@ export default {
       this.editor.layout();
     },
     onEditorDidMount(editor) {
-      console.log("editorDidMount");
+      // console.log("editorDidMount");
       this.lint(editor.getValue());
       // this.onChange(editor.getValue());
     },
@@ -250,7 +250,7 @@ export default {
       });
     },
     lint(text) {
-      console.log("lint");
+      // console.log("lint");
       if (text.length == 0) return [];
       const parseResult = parse(text);
 
@@ -274,7 +274,6 @@ export default {
       let walkResult = { errors: [] };
       if (parseResult.errors.length == 0) {
         walkResult = walk(parseResult.ast);
-        console.log("walkResult: ", walkResult);
         newDecorations = newDecorations.concat(
           walkResult.errors.map((e) => ({
             range: new this.monaco.Range(
@@ -303,11 +302,7 @@ export default {
         newDecorations
       );
 
-      console.log(parseResult.errors.length);
-      console.log(walkResult.errors.length);
-
       if (parseResult.errors.length == 0 && walkResult.errors.length == 0) {
-        console.log("emit passlint");
         this.$nextTick(() =>
           this.$emit("passLint", { parseResult, walkResult })
         );

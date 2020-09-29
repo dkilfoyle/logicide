@@ -72,6 +72,7 @@
                 :file="currentFile.name"
                 :gates="currentFile.gates"
                 :instances="currentFile.instances"
+                :instanceID="instanceID"
               ></gates>
             </gl-component>
             <gl-component title="Traces"></gl-component>
@@ -144,6 +145,8 @@ export default {
         content: [],
       },
 
+      instanceID: "main",
+
       openFiles: {},
       currentFileTab: "Scratch",
 
@@ -183,13 +186,14 @@ export default {
   },
   watch: {
     instanceTree() {
-      console.log("watched instanceTree: ", this.instanceTree);
       this.updateOutline();
+    },
+    currentFileTab() {
+      this.instanceID = "main";
     },
   },
   methods: {
     onChangeEditorModelContent() {
-      console.log("onChangedEditorModelContent");
       this.updateOutline();
     },
     updateOutline() {
@@ -205,15 +209,12 @@ export default {
         simulation: { ready: false, gates: {}, time: [], maxTime: 0 },
         state: "uncompiled",
       });
-
-      // this.currentFileTab = sourceName;
-      console.log(this.openFiles);
     },
     onCodeTreeSelection(node) {
       if (node.children.length == 0) this.addFileTab(node.text);
     },
-    onModuleTreeSelection(newSelection) {
-      console.log(newSelection);
+    onModuleTreeSelection(node) {
+      this.instanceID = node.data.id;
     },
     printTerminal() {
       console.log(this.sourceFiles);
@@ -256,6 +257,7 @@ export default {
       ];
       this.currentFile.gates = [...this.currentFile.compileResult.gates];
       this.currentFile.state = "compiled " + Date.now();
+      console.log("app: onPassLint: ", this.currentFile);
     },
 
     compile() {

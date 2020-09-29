@@ -28,7 +28,7 @@ export default {
   },
   watch: {
     state() {
-      console.log("stateWatcher: ", this.state);
+      // console.log("stateWatcher: ", this.state);
       if (this.state.startsWith("compiled"))
         this.$nextTick(() => this.buildNetlist());
     },
@@ -170,7 +170,7 @@ export default {
 
         // single output unless response
         if (gate.logic != "response") {
-          console.log("gate: ", gate);
+          // console.log("gate: ", gate);
           gateNet.ports.push({
             id: gate.id,
             hwMeta: { name: this.getLocalId(gate.id) },

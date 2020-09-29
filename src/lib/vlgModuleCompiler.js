@@ -45,72 +45,6 @@ const createInstance = (parentNamespace, instanceDeclaration) => {
       newInstance.gates.push(newGate.id);
     });
 
-  const evaluateAssignNode = (node, output) => {
-    // console.log(`output: ${output}, Type: ${node.type}`);
-    let lastOutput;
-    if (node.type == "BRACKETED_EXPRESSION" || node.type == "ASSIGN_EXPRESSION") {
-      let expr = node.value;
-      // console.log(
-      //   " -- " +
-      //     expr.map(x => x.type + ":" + JSON.stringify(x.value)).join(", ")
-      // );
-
-      // for each operation triplet
-      for (let i = 1; i < expr.length; i += 2) {
-        let curOutput = i == expr.length - 2 ? output : output + "op" + i; // if final operation, connect to output{!}, else a intermediate variable output{op}{i}
-
-        if (!varMap[curOutput]) varMap[curOutput] = `${namespace}.${curOutput}`;
-
-        gates.push({
-          id: varMap[curOutput],
-          logic: expr[i].value,
-          inputs: [
-            i == 1 ? evaluateAssignNode(expr[i - 1], output + "op" + (i - 1)) : varMap[lastOutput],
-            evaluateAssignNode(expr[i + 1], output + "op" + (i + 1)),
-          ],
-          state: 0,
-          type: "gate",
-          instance: instanceDeclaration.id,
-        });
-        newInstance.gates.push(varMap[curOutput]);
-        lastOutput = curOutput;
-      }
-      return varMap[lastOutput];
-    }
-
-    if (node.type == "VARIABLE") {
-      lastOutput = node.value;
-      if (node.invert) {
-        // prepare an inverter gate to pipe the node output
-        if (!varMap["not" + lastOutput]) {
-          // add a notA wire (if it doesn't already exist)
-          // add a gate: not(notA, A)
-          varMap["not" + lastOutput] = `${namespace}_not${lastOutput}`;
-          gates.push({
-            id: varMap["not" + lastOutput],
-            logic: "not",
-            inputs: [varMap[lastOutput]],
-            state: 0,
-            type: "gate",
-            instance: instanceDeclaration.id,
-          });
-          newInstance.gates.push(varMap["not" + lastOutput]);
-        }
-        return varMap["not" + lastOutput];
-      } else {
-        return varMap[lastOutput];
-      }
-    }
-
-    throw new Error("vlgWalker shouldn't be here. Node is not VARIABLE or EXPRESSION");
-  };
-
-  instanceModule.statements
-    .filter((x) => x.type == "assign")
-    .forEach((statement) => {
-      return evaluateAssignNode(statement.value, statement.id);
-    });
-
   // create a buffer gate for each port in the instance's module definition
   // each port is mapped to {parentNamespace}_{connection.value.id}
   // input port buffers:
@@ -132,7 +66,7 @@ const createInstance = (parentNamespace, instanceDeclaration) => {
         state: 0,
         type: "gate",
       };
-      console.log("main port ", port);
+      // console.log("main port ", port);
       gates.push(newGate);
       newInstance.gates.push(newGate.id);
       return;
