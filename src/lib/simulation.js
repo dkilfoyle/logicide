@@ -1,3 +1,5 @@
+const not = (x) => ~x & 1;
+
 const logicFunctions = {
   not: (a) => ~a & 1,
   buffer: (a) => a,

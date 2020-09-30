@@ -61,7 +61,14 @@
                 dark-mode
               />
             </gl-component>
-            <gl-component title="Simulation" :closable="false">simulation</gl-component>
+            <gl-component title="Simulation" :closable="false">
+              <div class="columns">
+                <div class="column">
+                  <b-button @click="compile">Compile</b-button>
+                  <b-button @click="simulate">Simulate</b-button>
+                </div>
+              </div>
+            </gl-component>
           </gl-stack>
         </gl-col>
         <gl-col>
@@ -98,7 +105,7 @@
 </template>
 
 <script>
-import "bulma/css/bulma.css";
+// import "bulma/css/bulma.css";
 
 import TerminalView from "./components/TerminalView";
 import Editor from "./components/Editor";
@@ -116,12 +123,16 @@ const shortJoin = (strs) => {
   else return x.slice(0, 40) + "...";
 };
 
-// import vlgParser from "./lib/vlgParser.js";
-// import vlgCompiler from "./lib/vlgCompiler.js";
-
 import vlgParse from "./lib/vlgAntlrParser.js"; // parsec parser
 import vlgWalk from "./lib/vlgAntlrListener.js"; // parsec parser
 import vlgCompile from "./lib/vlgModuleCompiler.js"; // parsec parser
+import evaluateGates from "./lib/simulation.js";
+
+const indexBy = (array, prop) =>
+  array.reduce((output, item) => {
+    output[item[prop]] = item;
+    return output;
+  }, {});
 
 import UtilsMixin from "./mixins/utils";
 import SelectionMixin from "./mixins/selections";
@@ -154,6 +165,8 @@ export default {
 
       sourceFiles: require("./files").SourceFiles,
       sourceTree: require("./files").SourceTree,
+
+      EVALS_PER_STEP: 5,
 
       // compiled: {
       //   timestamp: null,
@@ -332,7 +345,91 @@ export default {
       this.currentFile.timestamp = Date.now();
       this.currentFile.simulation = { ready: false };
     },
-    simulate() {},
+    simulate() {
+      this.showTerminal = true;
+      this.termWriteln(
+        chalk.bold.cyan("• Simulating: ") + chalk.yellow(this.currentFile.name)
+      );
+
+      const newSimulation = {
+        gates: {},
+        clock: [],
+        time: [],
+        ready: false,
+      };
+
+      this.currentFile.gates.forEach((g) => {
+        g.state = 0;
+        newSimulation.gates[g.id] = [];
+      });
+
+      var gatesLookup = indexBy(this.currentFile.gates, "id");
+      var instancesLookup = indexBy(this.currentFile.instances, "id");
+      var modulesLookup = indexBy(this.currentFile.walkResult.modules, "id");
+
+      const maxClock = modulesLookup.Main.clock.reduce(
+        (acc, val) => Math.max(val.time, acc),
+        0
+      );
+
+      if (gatesLookup["main_clock"]) gatesLookup["main_clock"].state = 0;
+
+      for (let clock = 0; clock <= maxClock; clock++) {
+        newSimulation.time.push(clock);
+        modulesLookup.Main.clock.forEach((c) => {
+          if (c.time == clock) {
+            c.assignments.forEach((a) => {
+              // can only assign values to control types
+              if (gatesLookup["main_" + a.id].logic == "control")
+                gatesLookup["main_" + a.id].state = a.value;
+            });
+          }
+        });
+
+        if (gatesLookup["main_clock"])
+          gatesLookup["main_clock"].state =
+            ~gatesLookup["main_clock"].state & 1; // tick-tock
+
+        for (let i = 0; i < this.EVALS_PER_STEP; i++) {
+          evaluateGates(this.currentFile.gates, gatesLookup);
+        }
+        this.currentFile.gates.forEach((g) => {
+          newSimulation.gates[g.id].push(gatesLookup[g.id].state);
+        });
+
+        newSimulation.clock.push(clock % 2);
+
+        modulesLookup.Main.clock.forEach((x, index, all) => {
+          if (x.time != clock) return;
+
+          const lineChar = index == all.length - 1 ? "└" : "├";
+
+          this.termWriteln(
+            chalk.cyan(
+              `${lineChar}── Time ${clock.toString().padStart(3, "0")} :`
+            ) +
+              shortJoin(x.assignments.map((a) => a.id + "=" + a.value)) +
+              chalk.cyan(" => ") +
+              shortJoin(
+                instancesLookup.main.gates
+                  .filter((gateId) => gatesLookup[gateId].logic == "response")
+                  .map((o) => this.getLocalId(o) + "=" + gatesLookup[o].state)
+              )
+          );
+        });
+      }
+      this.termWriteln(
+        chalk.cyan.inverse(" DONE ") + "  Simulated successfully"
+      );
+      newSimulation.maxTime = newSimulation.time[newSimulation.time.length - 1];
+      newSimulation.timestamp = Date.now();
+      newSimulation.ready = true;
+      this.currentFile.simulation = newSimulation;
+      console.log(
+        "Simulation: ",
+        this.stripReactive(this.currentFile.simulation)
+      );
+    },
   },
 };
 </script>

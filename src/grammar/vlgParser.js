@@ -1327,6 +1327,7 @@ function Time_stampContext(parser, parent, invokingState) {
 	antlr4.ParserRuleContext.call(this, parent, invokingState);
     this.parser = parser;
     this.ruleIndex = vlgParser.RULE_time_stamp;
+    this.num = null; // Token
     return this;
 }
 
@@ -1371,7 +1372,7 @@ vlgParser.prototype.time_stamp = function() {
         this.state = 136;
         this.match(vlgParser.T__12);
         this.state = 137;
-        this.match(vlgParser.UNSIGNED_NUMBER);
+        localctx.num = this.match(vlgParser.UNSIGNED_NUMBER);
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -1489,6 +1490,7 @@ function Time_assignmentContext(parser, parent, invokingState) {
 	antlr4.ParserRuleContext.call(this, parent, invokingState);
     this.parser = parser;
     this.ruleIndex = vlgParser.RULE_time_assignment;
+    this.id = null; // Token
     this.val = null; // Token
     return this;
 }
@@ -1496,12 +1498,12 @@ function Time_assignmentContext(parser, parent, invokingState) {
 Time_assignmentContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
 Time_assignmentContext.prototype.constructor = Time_assignmentContext;
 
-Time_assignmentContext.prototype.IDENTIFIER = function() {
-    return this.getToken(vlgParser.IDENTIFIER, 0);
-};
-
 Time_assignmentContext.prototype.ASSIGN = function() {
     return this.getToken(vlgParser.ASSIGN, 0);
+};
+
+Time_assignmentContext.prototype.IDENTIFIER = function() {
+    return this.getToken(vlgParser.IDENTIFIER, 0);
 };
 
 Time_assignmentContext.prototype.UNSIGNED_NUMBER = function() {
@@ -1540,7 +1542,7 @@ vlgParser.prototype.time_assignment = function() {
     try {
         this.enterOuterAlt(localctx, 1);
         this.state = 150;
-        this.match(vlgParser.IDENTIFIER);
+        localctx.id = this.match(vlgParser.IDENTIFIER);
         this.state = 151;
         this.match(vlgParser.ASSIGN);
         this.state = 152;
