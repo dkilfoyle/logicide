@@ -8,11 +8,8 @@
               :data="sourceTree"
               :options="{ nodeIndent: 14 }"
               @node:selected="onCodeTreeSelection"
-            ></liquor-tree>Options
-            Update on type
-            Compile
-            Gates
-            Schematic
+            ></liquor-tree>Options Update on
+            type Compile Gates Schematic
           </gl-component>
           <gl-component class="myMenu" :closable="false" title="Outline">
             <liquor-tree
@@ -73,16 +70,28 @@
         </gl-col>
         <gl-col>
           <gl-stack>
-            <gl-component title="Gates" class="myBulma">
+            <gl-component title="Gates" class="myBulma" :closable="false">
               <gates
                 :state="currentFile.state"
-                :file="currentFile.name"
                 :gates="currentFile.gates"
                 :instances="currentFile.instances"
                 :instanceID="instanceID"
               ></gates>
             </gl-component>
-            <gl-component title="Traces"></gl-component>
+            <gl-component title="Traces" class="myBulma" :closable="false">
+              <div v-if="currentFile.simulation.ready">
+                <traces
+                  :gates="currentFile.gates"
+                  :instances="currentFile.instances"
+                  :instanceID="instanceID"
+                  :simulation="currentFile.simulation"
+                ></traces>
+              </div>
+              <div v-else>
+                <b-button @click="simulate">Simulate</b-button>
+                {{ currentFile.simulation.ready }}
+              </div>
+            </gl-component>
           </gl-stack>
 
           <gl-component
@@ -111,6 +120,7 @@ import TerminalView from "./components/TerminalView";
 import Editor from "./components/Editor";
 import Gates from "./components/Gates";
 import Schematic from "./components/Schematic";
+import Traces from "./components/Traces";
 
 import LiquorTree from "liquor-tree";
 
@@ -145,6 +155,7 @@ export default {
     Gates,
     Schematic,
     LiquorTree,
+    Traces,
   },
   mixins: [UtilsMixin, SelectionMixin],
   data() {
@@ -167,15 +178,6 @@ export default {
       sourceTree: require("./files").SourceTree,
 
       EVALS_PER_STEP: 5,
-
-      // compiled: {
-      //   timestamp: null,
-      //   state: "uncompiled",
-      //   sourceFile: "",
-      //   parseTree: { lint: [] },
-      //   gates: [],
-      //   instances: [],
-      // },
     };
   },
   computed: {

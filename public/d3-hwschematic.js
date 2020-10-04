@@ -1037,7 +1037,10 @@
       // init d3Objs
       d3Objs[dstGraph.id] = d3Objs;
       (dstGraph.edges || []).forEach(function(e) {
-        if (e.id in d3Objs) throw new Error();
+        if (e.id in d3Objs) {
+          // console.log(srcGraph, dstGraph, d3Objs, e);
+          throw new Error();
+        }
         d3Objs[e.id] = e;
       });
       (dstGraph.children || []).forEach(function(n) {

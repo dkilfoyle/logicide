@@ -38,7 +38,7 @@ import SelectionMixin from "../mixins/selections";
 import UtilsMixin from "../mixins/utils";
 
 export default {
-  props: ["gates", "instances", "file", "instanceID"],
+  props: ["gates", "instances", "instanceID", "state"],
   mixins: [SelectionMixin, UtilsMixin],
   data() {
     return {};
