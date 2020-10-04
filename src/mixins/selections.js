@@ -10,9 +10,10 @@ export default {
       const buildNode = (id) => {
         const instance = this.instances.find((x) => x.id == id);
         const res = {
-          text: instance.id.slice(instance.id.lastIndexOf("_") + 1),
+          text: instance.id.slice(instance.id.lastIndexOf("_") + 1) + " : " + instance.module,
           data: { id: instance.id },
         };
+        if (id == "main") res.state = { selected: true, expanded: true };
         if (instance.instances.length > 0) res.children = instance.instances.map((ci) => buildNode(ci));
         return res;
       };

@@ -9,6 +9,7 @@ const createInstance = (parentNamespace, instanceDeclaration) => {
 
   var newInstance = {
     id: namespace,
+    module: instanceDeclaration.module,
     inputs: [], // input port gate ids
     outputs: [], // output port gate ids
     instances: [], // child instance ids
